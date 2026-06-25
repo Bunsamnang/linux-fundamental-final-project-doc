@@ -1,0 +1,13 @@
+From: security@fakebank.net
+To: customer@example.com
+Subject: URGENT: verify your account immediately
+Date: Tue, 9 Jun 2026 08:30:00 +0000
+
+Dear Customer,
+
+We detected suspicious activity. This is urgent. Please verify your account
+within 24 hours or it will be suspended. Click here:
+http://fakebank.net.evil.example/login
+
+Thank you,
+Security Team

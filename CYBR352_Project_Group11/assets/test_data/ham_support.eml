@@ -1,0 +1,15 @@
+From: support@github.com
+To: developer@example.com
+Subject: Your pull request has been merged
+Date: Tue, 23 Jun 2026 11:30:00 +0000
+
+Hi Developer,
+
+Great news! Your pull request #42 "Fix null pointer exception in auth module"
+has been reviewed and merged into main by the project maintainer.
+
+View it here: https://github.com/example/project/pull/42
+
+Thanks for your contribution!
+
+GitHub Team

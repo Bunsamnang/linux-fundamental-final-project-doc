@@ -1,0 +1,10 @@
+CYBR 352 - Spam Email Filter - References
+==========================================
+1. GNU Bash Reference Manual - https://www.gnu.org/software/bash/manual/
+2. man pages: bash(1), grep(1), awk(1), getopts(1p)
+3. ShellCheck static analysis - https://www.shellcheck.net/
+4. Google Shell Style Guide - https://google.github.io/styleguide/shellguide.html
+5. RFC 5322: Internet Message Format - https://datatracker.ietf.org/doc/html/rfc5322
+6. Apache SpamAssassin (scoring concept inspiration) - https://spamassassin.apache.org/
+7. OWASP Input Validation Cheat Sheet - https://owasp.org/
+8. CYBR 352 Project Guideline handout (Summer 2026)
