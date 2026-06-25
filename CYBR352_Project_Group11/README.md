@@ -29,11 +29,10 @@ The pipeline runs end-to-end with no user intervention after launch:
 **Team Members:**
 | Name | Student ID |
 |------|------------|
-| *Your Name* | *Your ID* |
-| *Teammate 2 (optional)* | *ID* |
+| *Khut Bunsamnang* | *2023461* |
+| *Vong Pisedhysara* | *2023478* |
+| *Veasna Naraksa* | *2024505* |
 
-> ✏️ Replace the table above (and the header comment inside `spam_filter.sh`)
-> with your real names and IDs before submitting.
 
 ---
 
@@ -202,13 +201,4 @@ CYBR352_Project_YourGroupName/
         ├── spam_phish.eml     # Sample spam (phishing)
         ├── ham_meeting.eml    # Sample legit email
         └── ham_invoice.eml    # Sample legit email
-```
-
-## Pre-Submission Checklist
-
-```bash
-bash -n spam_filter.sh        # Syntax check (passes)
-shellcheck spam_filter.sh     # Static analysis (clean, 0 warnings)
-chmod +x spam_filter.sh       # Executable bit set
-./spam_filter.sh -d ./assets/test_data   # End-to-end test
 ```
