@@ -2,7 +2,7 @@
 # ──────────────────────────────────────────────────────────────
 # spam_filter.sh — Spam Email Filter (Bash + Regex)
 # CYBR 352 — Bash Scripting Project (Topic 03)
-# Team: <Your Name(s)> | ID(s): <Your ID(s)>
+# Group 11
 #
 # Scans a directory of .eml files, scores each email against
 # spam keywords, blacklisted domains, and suspicious patterns,
