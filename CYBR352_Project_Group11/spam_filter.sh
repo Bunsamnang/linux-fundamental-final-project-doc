@@ -3,7 +3,6 @@
 # spam_filter.sh — Spam Email Filter (Bash + Regex)
 # CYBR 352 — Bash Scripting Project (Topic 03)
 # Group 11
-#
 # Scans a directory of .eml files, scores each email against
 # spam keywords, blacklisted domains, and suspicious patterns,
 # then classifies it as SPAM or HAM, optionally quarantines
@@ -42,6 +41,24 @@ SPAM_KEYWORDS=(
   "wire transfer"
   "100% free"
   "risk-free"
+  # crypto scam keywords
+  "guaranteed"
+  "guaranteed income"
+  "insider"
+  "crypto"
+  "bitcoin"
+  "send.*btc"
+  "wallet"
+  # job scam keywords
+  "work from home"
+  "no experience needed"
+  "earn.*week"
+  "guaranteed income"
+  # prize scam keywords
+  "claim your prize"
+  "you have been selected"
+  "credit card.*shipping"
+  "you are our.*visitor"
 )
 
 # Blacklisted sender domains — instant heavy penalty
@@ -50,6 +67,9 @@ SPAM_DOMAINS=(
   "@fakebank.net"
   "@free-prizes.biz"
   "@lottery-winner.info"
+  "@moonshot-gains.xyz"
+  "@quick-rich-online.biz"
+  "@global-giveaway.net"
 )
 
 # Scoring weights
@@ -58,6 +78,7 @@ WEIGHT_DOMAIN=5         # blacklisted sender domain
 WEIGHT_CAPS_SUBJECT=2   # subject is ALL CAPS
 WEIGHT_EXCESS_LINKS=2   # more than 3 URLs in body
 WEIGHT_MONEY_REGEX=2    # money amounts like $1,000,000
+WEIGHT_EXCLAIM=2        # excessive exclamation marks (3+)
 
 # Counters for the final summary
 TOTAL_EMAILS=0
@@ -175,6 +196,14 @@ score_email() {
   if grep -qE '\$[0-9]{1,3}(,[0-9]{3})+|\$[0-9]{4,}' <<< "$body"; then
     score=$((score + WEIGHT_MONEY_REGEX))
     reasons+="money-amount "
+  fi
+
+  # ── Check 6: excessive exclamation marks (3 or more in subject+body)
+  local exclaim_count
+  exclaim_count=$(grep -oF '!' <<< "$subject $body" | wc -l)
+  if [[ "$exclaim_count" -ge 3 ]]; then
+    score=$((score + WEIGHT_EXCLAIM))
+    reasons+="excessive-exclamation:($exclaim_count) "
   fi
 
   echo "${score}|${reasons:-none}"
