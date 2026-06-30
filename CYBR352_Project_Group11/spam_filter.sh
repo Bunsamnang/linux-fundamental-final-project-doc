@@ -3,6 +3,7 @@
 # spam_filter.sh — Spam Email Filter (Bash + Regex)
 # CYBR 352 — Bash Scripting Project (Topic 03)
 # Group 11
+
 # Scans a directory of .eml files, scores each email against
 # spam keywords, blacklisted domains, and suspicious patterns,
 # then classifies it as SPAM or HAM, optionally quarantines
@@ -22,43 +23,46 @@ VERSION="1.0"
 
 # Default settings (overridable via CLI flags — no hardcoded paths)
 MAIL_DIR="."                              # directory containing .eml files
-SPAM_THRESHOLD=5                          # score >= threshold => SPAM
+SPAM_THRESHOLD=3                          # score >= threshold => SPAM (tuned via backtest, see README)
 QUARANTINE=false                          # move spam to quarantine dir?
 QUARANTINE_DIR="./quarantine"
 REPORT_FILE="spam_report_$(date +%F).log"
 
-# Spam keyword list — each match adds points to the spam score
-SPAM_KEYWORDS=(
-  "win a prize"
+# Spam keyword lists — TIERED by precision, measured against a real labeled
+# dataset of 5,728 emails (1,368 spam / 4,360 ham). See references.txt.
+# Tier weighting reflects how reliably each phrase predicts spam in practice;
+# weak/ambiguous words (e.g. "urgent", "congratulations") were tested and
+# dropped — they showed up almost as often in legit email as in spam.
+
+# TIER 1 — high precision (≥85% spam when present). Strong standalone signal.
+SPAM_KEYWORDS_TIER1=(
+  "viagra"
+  "cialis"
+  "pharmacy"
   "click here"
-  "free money"
-  "urgent"
-  "verify your account"
-  "limited time offer"
-  "act now"
-  "congratulations"
-  "lottery"
-  "wire transfer"
-  "100% free"
-  "risk-free"
-  # crypto scam keywords
+  "removed from.*list"
   "guaranteed"
-  "guaranteed income"
-  "insider"
-  "crypto"
-  "bitcoin"
-  "send.*btc"
-  "wallet"
-  # job scam keywords
+  "limited time"
+  "act now"
+  "weight loss"
+  "penny stock"
+  "wire transfer"
+)
+
+# TIER 2 — moderate precision (~65-85%). Good supporting evidence, not
+# conclusive alone.
+SPAM_KEYWORDS_TIER2=(
+  "unsubscribe"
+  "mailing list"
+  "win a prize"
+  "lottery"
+  "risk-free"
+  "100% free"
   "work from home"
   "no experience needed"
-  "earn.*week"
-  "guaranteed income"
-  # prize scam keywords
-  "claim your prize"
-  "you have been selected"
   "credit card.*shipping"
-  "you are our.*visitor"
+  "you have been selected"
+  "claim your prize"
 )
 
 # Blacklisted sender domains — instant heavy penalty
@@ -72,13 +76,15 @@ SPAM_DOMAINS=(
   "@global-giveaway.net"
 )
 
-# Scoring weights
-WEIGHT_KEYWORD=2        # per keyword hit
-WEIGHT_DOMAIN=5         # blacklisted sender domain
-WEIGHT_CAPS_SUBJECT=2   # subject is ALL CAPS
-WEIGHT_EXCESS_LINKS=2   # more than 3 URLs in body
-WEIGHT_MONEY_REGEX=2    # money amounts like $1,000,000
-WEIGHT_EXCLAIM=2        # excessive exclamation marks (3+)
+# Scoring weights — tuned using precision data from emails.csv
+WEIGHT_KEYWORD_T1=3      # per Tier-1 (high-precision) keyword hit
+WEIGHT_KEYWORD_T2=2      # per Tier-2 (moderate-precision) keyword hit
+WEIGHT_DOMAIN=5          # blacklisted sender domain
+WEIGHT_CAPS_SUBJECT=2    # subject is ALL CAPS
+WEIGHT_EXCESS_LINKS=2    # more than 3 URLs in body
+WEIGHT_MONEY_REGEX=2     # money amounts like $1,000,000
+WEIGHT_EXCLAIM=2         # excessive exclamation marks (3+)
+WEIGHT_PERCENT=1         # numeric percent offer, e.g. "50% off" (weak alone)
 
 # Counters for the final summary
 TOTAL_EMAILS=0
@@ -162,11 +168,19 @@ score_email() {
   # Body = everything after the first blank line
   body=$(awk 'blank{print} /^[[:space:]]*$/{blank=1}' "$file")
 
-  # ── Check 1: spam keywords in subject OR body (case-insensitive)
-  for keyword in "${SPAM_KEYWORDS[@]}"; do
+  # ── Check 1a: Tier-1 high-precision keywords (subject OR body)
+  for keyword in "${SPAM_KEYWORDS_TIER1[@]}"; do
     if grep -qiE "$keyword" <<< "$subject $body"; then
-      score=$((score + WEIGHT_KEYWORD))
-      reasons+="keyword:'$keyword' "
+      score=$((score + WEIGHT_KEYWORD_T1))
+      reasons+="keyword-t1:'$keyword' "
+    fi
+  done
+
+  # ── Check 1b: Tier-2 moderate-precision keywords (subject OR body)
+  for keyword in "${SPAM_KEYWORDS_TIER2[@]}"; do
+    if grep -qiE "$keyword" <<< "$subject $body"; then
+      score=$((score + WEIGHT_KEYWORD_T2))
+      reasons+="keyword-t2:'$keyword' "
     fi
   done
 
@@ -204,6 +218,14 @@ score_email() {
   if [[ "$exclaim_count" -ge 3 ]]; then
     score=$((score + WEIGHT_EXCLAIM))
     reasons+="excessive-exclamation:($exclaim_count) "
+  fi
+
+  # ── Check 7: numeric percent-offer pattern, e.g. "50% off", "3.72% rate"
+  # Weak signal alone (only ~67% precision in our dataset test), so it
+  # carries a lower weight than the keyword tiers above.
+  if grep -qE '[0-9]+(\.[0-9]+)?[[:space:]]?%' <<< "$subject $body"; then
+    score=$((score + WEIGHT_PERCENT))
+    reasons+="percent-offer "
   fi
 
   echo "${score}|${reasons:-none}"
